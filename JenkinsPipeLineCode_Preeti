@@ -1,0 +1,68 @@
+pipeline{
+    
+    tools{
+        maven 'mymaven'
+        jdk 'myjava'
+    }
+    agent none
+    stages{
+        stage('Clone A Repo'){
+            agent any
+            steps{
+                git 'https://github.com/VenkataNarasimha19/DevOpsClassCodes.git'
+            }
+        }
+        stage('Compile the code'){
+            agent any
+            steps{
+                sh 'mvn compile'
+            }
+        }
+        stage('Code Review')
+        {   
+            agent any
+            steps{
+                sh 'mvn pmd:pmd'
+            }
+        }
+        stage('Unit Test')
+        { 
+            agent any
+            steps{
+                sh 'mvn test'
+            }
+            post{
+                success{
+                    junit 'target/surefire-reports/*.xml'
+                }
+            }
+        }
+        stage('MetricCheck')
+        {
+            agent any
+            steps{
+                sh "mvn cobertura:cobertura -Dcobertura.report.format=xml"
+            }
+            post
+            {
+                success{
+                    cobertura coberturaReportFile: 'target/site/cobertura/coverage.xml'
+                }
+            }
+        }
+        stage('package')
+        {
+            agent {label 'linux_slave'}
+            steps{
+                git 'https://github.com/VenkataNarasimha19/DevOpsClassCodes.git'
+                sh 'mvn package'
+            }
+            post{
+                success{
+                    jacoco()
+                }
+            }
+        }
+    }
+        
+}
